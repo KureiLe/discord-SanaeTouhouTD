@@ -40,8 +40,6 @@ async def on_message(message):
 
     await bot.process_commands(message)
 
-
-# NOT DONE
 @bot.event
 async def on_raw_reaction_add(reaction):
     if reaction.channel_id == RPchannel_ID:
