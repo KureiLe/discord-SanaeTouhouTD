@@ -158,6 +158,7 @@ async def bugs(ctx):
 
     #put in array
     embed=disnake.Embed(title="Bug Reports", description="From most reactions to least", color=0x4fe64c)
+    embed.set_thumbnail(url="https://media.discordapp.net/attachments/988442510026235914/994600993574637689/d74ca0dcdcea3cd99cb9a93bb2a670ff.png")
     for data in DB2data_sorted:
         dataDB2 = data["data"]
         # get database content from database1
