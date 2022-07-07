@@ -28,9 +28,11 @@ async def on_ready():
 async def on_message(message):
     if message.channel.id == RPchannel_ID:
         if message.author.id == bot.user.id:  
-            if message.content != "Lady Suwako only allow Admins to use this command." and message.content != "Please insert a link for the proof!" and message.content != "I'm sorry, but Lady Kanako forbids anyone from doing this command in this channel. Do it in <#{RPchannel_ID}> instead.":
-                await message.add_reaction("✅")
-                await message.add_reaction("❎")
+            # Having 3 and in a bool doenst work for some reason
+            if message.content != "Lady Suwako only allow Admins to use this command." and message.content !=  "Please insert a link for the proof!":
+                if message.content != message.content !=  "I'm sorry, but Lady Kanako forbids anyone from doing this command in this channel. Do it in <#{RPchannel_ID}> instead.":
+                    await message.add_reaction("✅")
+                    await message.add_reaction("❎")
         else:
             await message.delete()
 
