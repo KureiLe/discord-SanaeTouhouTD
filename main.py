@@ -20,8 +20,7 @@ WLinks = "https://"
 # Commands
 @bot.event
 async def on_ready():
-    await bot.change_presence(activity=disnake.Streaming(name="Touhou TD", url="https://www.roblox.com/games/8316708135/touhou-tower-defense"))
-    await bot.change_presence(status="prefix = s!")
+    await bot.change_presence(activity=disnake.Game(name="Touhou TD"), status="prefix = s!")
     print("I am online")
 
 @bot.command()
@@ -107,5 +106,36 @@ async def reportbug(inter, bug: str, proof: str):
             await DBchannel2.send(str(data2))
     else:
         await inter.response.send_message("Must report bug in the correct channel")
+
+@bot.command()
+async def bugs(ctx):
+    # Get channels
+    DBchannel = bot.get_channel(DBchannel_ID)
+    DBchannel2 = bot.get_channel(DBchannel2_ID)
+
+    # Put DB2 data to array
+    DB2data = []
+    async for message in DBchannel2.history(limit=None):
+        message_data = json.loads(message.content.replace("'", '"'))
+        append_data = {"sortby": message_data["reactions"], "data": message_data}
+        DB2data.append(append_data)
+
+    # Sort the array
+    DB2data_sorted = sorted(DB2data, key=lambda i: i["sortby"], reverse=True)
+
+    #put in array
+    embed=disnake.Embed(title="Bug Reports", color=0x4fe64c)
+    for data in DB2data:
+        dataDB2 = data["data"]
+        # get database content from database1
+        dataDB1_message = await DBchannel.fetch_message(dataDB2["databaseMSG_ID"])
+        dataDB1 = json.loads(dataDB1_message.content.replace("'", '"'))
+        # Gather info and boom assemble
+        thebug = dataDB1["bug"]
+        thetime = dataDB1["time"]
+        thereportid = dataDB2["databaseMSG_ID"]
+        theproof = dataDB1["proof"]
+        embed.add_field(name=f"title: {thebug}\ntime: {thetime}", value=f"report_id: {thereportid}\nproof: {theproof}", inline=False)
+    await ctx.send(embed=embed)
 
 bot.run(token)
