@@ -174,8 +174,9 @@ async def bugs(ctx):
         thereaction = dataDB2["reactions"]
         thetime = dataDB1["time"]
         thereportid = dataDB2["reportMSG_ID"]
+        thereporter = dataDB1["reporter"]
         theproof = dataDB1["proof"]
-        embed.add_field(name=f"Title: {thebug} ({thereaction} reactions)\nTime reported: {thetime} (GMT+7)", value=f"Report_id: {thereportid}\nProof: {theproof}", inline=False)
+        embed.add_field(name=f"Title: {thebug} ({thereaction} reactions)\nTime reported: {thetime} (GMT+7)", value=f"Reporter: <@{thereporter}>\nReport_id: {thereportid}\nProof: {theproof}", inline=False)
     await ctx.send(embed=embed)
 
 @bot.slash_command(description="Get bug reports")
@@ -206,10 +207,11 @@ async def bugs(inter):
             # Gather info and boom assemble
             thebug = dataDB1["bug"]
             thereaction = dataDB2["reactions"]
+            thereporter = dataDB1["reporter"]
             thetime = dataDB1["time"]
             thereportid = dataDB2["reportMSG_ID"]
             theproof = dataDB1["proof"]
-            embed.add_field(name=f"Title: {thebug} ({thereaction} reactions)\nTime reported: {thetime} (GMT+7)", value=f"Report_id: {thereportid}\nProof: {theproof}", inline=False)
+            embed.add_field(name=f"Title: {thebug} ({thereaction} reactions)\nTime reported: {thetime} (GMT+7)", value=f"Reporter: <@{thereporter}>\nReport_id: {thereportid}\nProof: {theproof}", inline=False)
         await inter.response.send_message(embed=embed)
     else:
         await inter.response.send_message(f"I'm sorry, but Lady Kanako forbids anyone from doing this command in this channel. Do it in <#{RPchannel_ID}> instead.")
