@@ -15,9 +15,6 @@ DBchannel_ID = json.load(open("config.json"))["DatabaseChannel_ID"]
 DBchannel2_ID = json.load(open("config.json"))["DatabaseChannel2_ID"]
 RPchannel_ID = json.load(open("config.json"))["ReportChannel_ID"]
 
-# Whitetlisted links (for now)
-WLinks = "https://"
-
 # Commands
 @bot.event
 async def on_ready():
@@ -30,7 +27,7 @@ async def on_message(message):
         if message.author.id == bot.user.id:  
             # Having 3 and in a bool doenst work for some reason
             if message.content != "Lady Suwako only allow Admins to use this command." and message.content !=  "Please insert a link for the proof!":
-                if message.content != message.content !=  "I'm sorry, but Lady Kanako forbids anyone from doing this command in this channel. Do it in <#{RPchannel_ID}> instead.":
+                if message.content != f"I'm sorry, but Lady Kanako forbids anyone from doing this command in this channel. Do it in <#{RPchannel_ID}> instead.":
                     await message.add_reaction("✅")
                     await message.add_reaction("❎")
         else:
@@ -63,8 +60,8 @@ async def on_raw_reaction_add(reaction):
             for x in message.reactions:
                 if "❎" in list(str(x)):
                     count = int(x.count)
-                    # If theres 2 or more X reaction
-                    if count >= 2:
+                    # If theres 4 or more X reaction
+                    if count >= 4:
                         # Get data from database2
                         async for msg in DBchannel2.history(limit=None):
                             # Turn it to dictionary
@@ -87,21 +84,27 @@ async def on_raw_reaction_add(reaction):
 
 @bot.command()
 async def help(ctx):
-    embed=disnake.Embed(title="Commands (Prefix = s!)", color=0x4fe64c)
-    embed.set_thumbnail(url="https://media.discordapp.net/attachments/988442510026235914/994600993574637689/d74ca0dcdcea3cd99cb9a93bb2a670ff.png")
-    embed.add_field(name="/reportbug", value="Report bug (need link as proof", inline=False)
-    embed.add_field(name="s!bugs or /bugs", value="View list of bugs sorted from most ✅", inline=False)
-    embed.add_field(name="s!delreport or /delreport (only visible for admins)", value="Delete report (argumment has to be the report message ID, find it or look for it in the s!bugs command)", inline=True)
-    await ctx.send(embed=embed)
+    if not ctx.channel.id == RPchannel_ID:
+        embed=disnake.Embed(title="Commands (Prefix = s!)", color=0x4fe64c)
+        embed.set_thumbnail(url="https://media.discordapp.net/attachments/988442510026235914/994600993574637689/d74ca0dcdcea3cd99cb9a93bb2a670ff.png")
+        embed.add_field(name="/reportbug", value="Report bug (need link as proof", inline=False)
+        embed.add_field(name="s!bugs or /bugs", value="View list of bugs sorted from most ✅", inline=False)
+        embed.add_field(name="s!delreport or /delreport (only visible for admins)", value="Delete report (argumment has to be the report message ID, find it or look for it in the s!bugs command)", inline=True)
+        await ctx.send(embed=embed)
+    else:
+        await ctx.send(f"I'm sorry, but Lady Kanako forbids anyone from doing this command in this channel. Do it in <#{RPchannel_ID}> instead.")
 
 @bot.slash_command(description="Isn't it self explanatory")
 async def help(inter):
-    embed=disnake.Embed(title="Commands (Prefix = s!)", color=0x4fe64c)
-    embed.set_thumbnail(url="https://media.discordapp.net/attachments/988442510026235914/994600993574637689/d74ca0dcdcea3cd99cb9a93bb2a670ff.png")
-    embed.add_field(name="/reportbug", value="Report bug (need link as proof)", inline=False)
-    embed.add_field(name="s!bugs or /bugs", value="View list of bugs sorted from most ✅", inline=False)
-    embed.add_field(name="s!delreport or /delreport (only visible for admins)", value="Delete report (argumment has to be the report message ID, find it or look for it in the s!bugs command)", inline=True)
-    await inter.response.send_message(embed=embed)
+    if not inter.channel.id == RPchannel_ID:
+        embed=disnake.Embed(title="Commands (Prefix = s!)", color=0x4fe64c)
+        embed.set_thumbnail(url="https://media.discordapp.net/attachments/988442510026235914/994600993574637689/d74ca0dcdcea3cd99cb9a93bb2a670ff.png")
+        embed.add_field(name="/reportbug", value="Report bug (need link as proof)", inline=False)
+        embed.add_field(name="s!bugs or /bugs", value="View list of bugs sorted from most ✅", inline=False)
+        embed.add_field(name="s!delreport or /delreport (only visible for admins)", value="Delete report (argumment has to be the report message ID, find it or look for it in the s!bugs command)", inline=True)
+        await inter.response.send_message(embed=embed)
+    else:
+        await inter.response.send_message(f"I'm sorry, but Lady Kanako forbids anyone from doing this command in this channel. Do it in <#{RPchannel_ID}> instead.")
 
 
 
@@ -170,7 +173,7 @@ async def bugs(ctx):
         thebug = dataDB1["bug"]
         thereaction = dataDB2["reactions"]
         thetime = dataDB1["time"]
-        thereportid = dataDB2["databaseMSG_ID"]
+        thereportid = dataDB2["reportMSG_ID"]
         theproof = dataDB1["proof"]
         embed.add_field(name=f"Title: {thebug} ({thereaction} reactions)\nTime reported: {thetime} (GMT+7)", value=f"Report_id: {thereportid}\nProof: {theproof}", inline=False)
     await ctx.send(embed=embed)
@@ -204,7 +207,7 @@ async def bugs(inter):
             thebug = dataDB1["bug"]
             thereaction = dataDB2["reactions"]
             thetime = dataDB1["time"]
-            thereportid = dataDB2["databaseMSG_ID"]
+            thereportid = dataDB2["reportMSG_ID"]
             theproof = dataDB1["proof"]
             embed.add_field(name=f"Title: {thebug} ({thereaction} reactions)\nTime reported: {thetime} (GMT+7)", value=f"Report_id: {thereportid}\nProof: {theproof}", inline=False)
         await inter.response.send_message(embed=embed)
@@ -251,7 +254,7 @@ async def delreport(ctx, message=None):
         else:
             await ctx.send("Please insert the report ID (or bug report message ID)!")
     else:
-        await ctx.send("I'm sorry, but Lady Kanako forbids anyone from doing this command in this channel. Do it in <#{RPchannel_ID}> instead.")
+        await ctx.send(f"I'm sorry, but Lady Kanako forbids anyone from doing this command in this channel. Do it in <#{RPchannel_ID}> instead.")
 
 @delreport.error
 async def delreport_error(ctx, error):
