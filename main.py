@@ -5,6 +5,8 @@ from datetime import datetime
 import validators
 import json
 
+import asyncio
+
 # Make Bot
 intents = disnake.Intents().all()
 bot = commands.Bot(command_prefix="s!", intents=intents, help_command=None)
@@ -52,16 +54,27 @@ async def on_raw_reaction_add(reaction):
                     # Get data from db2
                     async for msg in DBchannel2.history(limit=None):
                         DB2_data = json.loads(msg.content.replace("'", '"'))
+                        # Get the data message from the data channel
                         if DB2_data["reportMSG_ID"] == reaction.message_id:
+                            # Edit the thing
                             DB2_data["reactions"] = count
                             await msg.edit(content=str(DB2_data))
+                
+                            # Hayden requested this
+                            haydens_id = 434550320056500236
+                            DBmsg = await DBchannel.fetch_message(DB2_data["databaseMSG_ID"])
+                            if count >= 4:
+                                DBmsg_data = json.loads(DBmsg.content.replace("'", '"'))
+                                if not "UwU" in DBmsg_data.keys():
+                                    DBmsg_data["UwU"] = f"<@{haydens_id}> hi daddy the report has 4 reactions"
+                                    await DBmsg.edit(str(DBmsg_data))
 
         elif reaction.emoji.name == "❎":
             for x in message.reactions:
                 if "❎" in list(str(x)):
                     count = int(x.count)
                     # If theres 4 or more X reaction
-                    if count >= 4:
+                    if count >= 2:
                         # Get data from database2
                         async for msg in DBchannel2.history(limit=None):
                             # Turn it to dictionary
@@ -133,6 +146,7 @@ async def reportbug(inter, bug: str, proof: str):
             DBsend = await DBchannel.send(str(data))
             # Announce
             announce = await RPchannel.send(f"{inter.author.mention} reported a bug:\nTitle: {bug}\nProof: {proof}")
+            await announce.edit(f"{inter.author.mention} reported a bug:\nTitle: {bug}\nProof: {proof}\n\nTime reported: {current_time} (GMT +7)\nReport ID: {announce.id}")
             # Append database2
             data2 = {"reportMSG_ID": announce.id, "databaseMSG_ID": DBsend.id, "reactions": 0}
             await DBchannel2.send(str(data2))
@@ -144,6 +158,18 @@ async def reportbug(inter, bug: str, proof: str):
 
 
 
+
+@bot.command()
+async def test(ctx):
+    view = disnake.ui.View()
+    checkmark = disnake.ui.Button(style=disnake.ButtonStyle.blurple, emoji="⬅️", label="Left page")
+    ecksmark = disnake.ui.Button(style=disnake.ButtonStyle.blurple, emoji="➡️", label="Next page")
+    done = disnake.ui.Button(style=disnake.ButtonStyle.red, emoji="🏳", label="Done")
+    view.add_item(checkmark)
+    view.add_item(ecksmark)
+    view.add_item(done)
+
+    sent_message = await ctx.send("I will continue this tomorrow", view=view)
 
 @bot.command()
 async def bugs(ctx):
