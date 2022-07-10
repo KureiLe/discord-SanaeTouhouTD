@@ -4,7 +4,7 @@ from disnake.ext.commands import has_permissions, MissingPermissions
 from datetime import datetime
 import validators
 import json
-
+import math
 import asyncio
 
 # Make Bot
@@ -15,7 +15,12 @@ bot = commands.Bot(command_prefix="s!", intents=intents, help_command=None)
 token = json.load(open("config.json"))["TOKEN"]
 DBchannel_ID = json.load(open("config.json"))["DatabaseChannel_ID"]
 DBchannel2_ID = json.load(open("config.json"))["DatabaseChannel2_ID"]
+DBchannel3_ID = json.load(open("config.json"))["DatabaseChannel3_ID"]
 RPchannel_ID = json.load(open("config.json"))["ReportChannel_ID"]
+
+async def temporaryMSG(message):
+    await asyncio.sleep(3)
+    await message.delete()
 
 # Commands
 @bot.event
@@ -29,7 +34,7 @@ async def on_message(message):
         if message.author.id == bot.user.id:  
             # Having 3 and in a bool doenst work for some reason
             if message.content != "Lady Suwako only allow Admins to use this command." and message.content !=  "Please insert a link for the proof!":
-                if message.content != f"I'm sorry, but Lady Kanako forbids anyone from doing this command in this channel. Do it in <#{RPchannel_ID}> instead.":
+                if not f"I'm sorry, but Lady Kanako forbids anyone from doing this command in this channel." in message.content:
                     await message.add_reaction("✅")
                     await message.add_reaction("❎")
         else:
@@ -100,9 +105,10 @@ async def help(ctx):
     if not ctx.channel.id == RPchannel_ID:
         embed=disnake.Embed(title="Commands (Prefix = s!)", color=0x4fe64c)
         embed.set_thumbnail(url="https://media.discordapp.net/attachments/988442510026235914/994600993574637689/d74ca0dcdcea3cd99cb9a93bb2a670ff.png")
-        embed.add_field(name="/reportbug", value="Report bug (need link as proof", inline=False)
+        embed.add_field(name="/reportbug", value="Report bug (need link as proof)", inline=False)
         embed.add_field(name="s!bugs or /bugs", value="View list of bugs sorted from most ✅", inline=False)
         embed.add_field(name="s!delreport or /delreport (only visible for admins)", value="Delete report (argumment has to be the report message ID, find it or look for it in the s!bugs command)", inline=True)
+        embed.set_footer(text="Why is the bot slow? Because this bot uses discord channels as database, and lack of money")
         await ctx.send(embed=embed)
     else:
         await ctx.send(f"I'm sorry, but Lady Kanako forbids anyone from doing this command in this channel. Do it in <#{RPchannel_ID}> instead.")
@@ -115,6 +121,7 @@ async def help(inter):
         embed.add_field(name="/reportbug", value="Report bug (need link as proof)", inline=False)
         embed.add_field(name="s!bugs or /bugs", value="View list of bugs sorted from most ✅", inline=False)
         embed.add_field(name="s!delreport or /delreport (only visible for admins)", value="Delete report (argumment has to be the report message ID, find it or look for it in the s!bugs command)", inline=True)
+        embed.set_footer(text="Why is the bot slow? Because this bot uses discord channels as database, and lack of money")
         await inter.response.send_message(embed=embed)
     else:
         await inter.response.send_message(f"I'm sorry, but Lady Kanako forbids anyone from doing this command in this channel. Do it in <#{RPchannel_ID}> instead.")
@@ -134,7 +141,7 @@ async def reportbug(inter, bug: str, proof: str):
 
         # Check if proof is acceptable
         if not validators.url(proof):
-            await inter.response.send_message("Please insert a link for the proof!")
+            await inter.response.send_message("Please insert a link for the proof!", ephemeral=True)
         else:
             # Data
             data = {"reporter": inter.author.id, "time": current_time, "bug": bug, "proof": f"{proof} "}
@@ -151,66 +158,21 @@ async def reportbug(inter, bug: str, proof: str):
             data2 = {"reportMSG_ID": announce.id, "databaseMSG_ID": DBsend.id, "reactions": 0}
             await DBchannel2.send(str(data2))
     else:
-        await inter.response.send_message(f"I'm sorry, but Lady Kanako forbids anyone from doing this command in this channel. Do it in <#{RPchannel_ID}> instead.")
+        await inter.response.send_message(f"I'm sorry, but Lady Kanako forbids anyone from doing this command in this channel. Do it in <#{RPchannel_ID}> instead.", ephemeral=True)
 
 
 
 
 
 
-
-@bot.command()
-async def test(ctx):
-    view = disnake.ui.View()
-    checkmark = disnake.ui.Button(style=disnake.ButtonStyle.blurple, emoji="⬅️", label="Left page")
-    ecksmark = disnake.ui.Button(style=disnake.ButtonStyle.blurple, emoji="➡️", label="Next page")
-    done = disnake.ui.Button(style=disnake.ButtonStyle.red, emoji="🏳", label="Done")
-    view.add_item(checkmark)
-    view.add_item(ecksmark)
-    view.add_item(done)
-
-    sent_message = await ctx.send("I will continue this tomorrow", view=view)
 
 @bot.command()
 async def bugs(ctx):
-    # Get channels
-    DBchannel = bot.get_channel(DBchannel_ID)
-    DBchannel2 = bot.get_channel(DBchannel2_ID)
-
-    # Put DB2 data to array
-    DB2data = []
-    async for message in DBchannel2.history(limit=None):
-        message_data = json.loads(message.content.replace("'", '"'))
-        append_data = {"sortby": message_data["reactions"], "data": message_data}
-        DB2data.append(append_data)
-
-    # Sort the array
-    DB2data_sorted = sorted(DB2data, key=lambda i: i["sortby"], reverse=True)
-
-    #put in array
-    embed=disnake.Embed(title="Bug Reports", description="From most reactions to least", color=0x4fe64c)
-    embed.set_thumbnail(url="https://media.discordapp.net/attachments/988442510026235914/994600993574637689/d74ca0dcdcea3cd99cb9a93bb2a670ff.png")
-    for data in DB2data_sorted:
-        dataDB2 = data["data"]
-        # get database content from database1
-        dataDB1_message = await DBchannel.fetch_message(dataDB2["databaseMSG_ID"])
-        dataDB1 = json.loads(dataDB1_message.content.replace("'", '"'))
-        # Gather info and boom assemble
-        thebug = dataDB1["bug"]
-        thereaction = dataDB2["reactions"]
-        thetime = dataDB1["time"]
-        thereportid = dataDB2["reportMSG_ID"]
-        thereporter = dataDB1["reporter"]
-        theproof = dataDB1["proof"]
-        embed.add_field(name=f"Title: {thebug} ({thereaction} reactions)\nTime reported: {thetime} (GMT+7)", value=f"Reporter: <@{thereporter}>\nReport_id: {thereportid}\nProof: {theproof}", inline=False)
-    await ctx.send(embed=embed)
-
-@bot.slash_command(description="Get bug reports")
-async def bugs(inter):
-    if not inter.channel_id == RPchannel_ID:
+    if not ctx.channel.id == RPchannel_ID:
         # Get channels
         DBchannel = bot.get_channel(DBchannel_ID)
         DBchannel2 = bot.get_channel(DBchannel2_ID)
+        DBchannel3 = bot.get_channel(DBchannel3_ID)
 
         # Put DB2 data to array
         DB2data = []
@@ -222,25 +184,225 @@ async def bugs(inter):
         # Sort the array
         DB2data_sorted = sorted(DB2data, key=lambda i: i["sortby"], reverse=True)
 
-        #put in array
-        embed=disnake.Embed(title="Bug Reports", description="From most reactions to least", color=0x4fe64c)
-        embed.set_thumbnail(url="https://media.discordapp.net/attachments/988442510026235914/994600993574637689/d74ca0dcdcea3cd99cb9a93bb2a670ff.png")
-        for data in DB2data_sorted:
-            dataDB2 = data["data"]
-            # get database content from database1
-            dataDB1_message = await DBchannel.fetch_message(dataDB2["databaseMSG_ID"])
-            dataDB1 = json.loads(dataDB1_message.content.replace("'", '"'))
-            # Gather info and boom assemble
-            thebug = dataDB1["bug"]
-            thereaction = dataDB2["reactions"]
-            thereporter = dataDB1["reporter"]
-            thetime = dataDB1["time"]
-            thereportid = dataDB2["reportMSG_ID"]
-            theproof = dataDB1["proof"]
-            embed.add_field(name=f"Title: {thebug} ({thereaction} reactions)\nTime reported: {thetime} (GMT+7)", value=f"Reporter: <@{thereporter}>\nReport_id: {thereportid}\nProof: {theproof}", inline=False)
-        await inter.response.send_message(embed=embed)
+        # Define buttons
+        view = disnake.ui.View()
+        leftBTN = disnake.ui.Button(
+                style=disnake.ButtonStyle.blurple, 
+                emoji="⬅️", 
+                label="Left page"
+                )
+        rightBTN = disnake.ui.Button(
+                style=disnake.ButtonStyle.blurple, 
+                emoji="➡️", 
+                label="Next page"
+                )
+        def buttons(currentPG, totalPG):
+            if not currentPG == 1:
+                view.add_item(leftBTN)
+            if not currentPG == totalPG:
+                view.add_item(rightBTN)
+
+            return view
+
+        # Split the data into 5 per array
+        n=5
+        sliced_DB2data_sorted=[DB2data_sorted[i:i + n] for i in range(0, len(DB2data_sorted), n)]
+        currentPG = 1
+        totalPG = len(sliced_DB2data_sorted)
+
+        # Embed stuff
+        async def get_embed(sliced_DB2data_sorted, currentPG, totalPG):
+            thumbnail_url = "https://media.discordapp.net/attachments/988442510026235914/994600993574637689/d74ca0dcdcea3cd99cb9a93bb2a670ff.png"
+            embed=disnake.Embed(title="Bug Reports", description="From most reactions to least (wait for it to load until pressing another button)", color=0x4fe64c)
+            embed.set_thumbnail(url=thumbnail_url)
+            for data in sliced_DB2data_sorted[currentPG-1]:
+                dataDB2 = data["data"]
+                # get database content from database1
+                dataDB1_message = await DBchannel.fetch_message(dataDB2["databaseMSG_ID"])
+                dataDB1 = json.loads(dataDB1_message.content.replace("'", '"'))
+                # Gather info and boom assemble
+                thebug = dataDB1["bug"]
+                thereaction = dataDB2["reactions"]
+                thetime = dataDB1["time"]
+                thereportid = dataDB2["reportMSG_ID"]
+                thereporter = dataDB1["reporter"]
+                theproof = dataDB1["proof"]
+                embed.add_field(name=f"{thebug} ({thereaction} reactions)", value=f"Reporter: <@{thereporter}>\nTime reported: {thetime} (GMT+7)\nReport_id: {thereportid}\nProof: {theproof}", inline=False)
+                embed.set_footer(text=f"page {currentPG}/{totalPG}")
+            return embed
+        sent_message = await ctx.send(embed=await get_embed(sliced_DB2data_sorted, currentPG, totalPG), view=buttons(currentPG=currentPG, totalPG=totalPG))
+
+        post = {
+            "interactionID": sent_message.id,
+            "page": currentPG
+        }
+        DB_post = await DBchannel3.send(post)
+
+        async def leftBTN_callback(inter):
+            # So interaction failed dont accur
+            await inter.response.defer()
+
+            async for messages in DBchannel3.history(limit=None):
+                messages_data = json.loads(messages.content.replace("'", '"'))
+                if messages_data["interactionID"] == inter.message.id:
+                    local_currentPG = messages_data["page"] - 1
+                    local_sent_messageID = messages_data["interactionID"]
+
+                    getChannelID = inter.channel.id
+                    getChannel = bot.get_channel(getChannelID)
+                    getMessage = await getChannel.fetch_message(local_sent_messageID)
+                    # Because discord be error if i have duplicates
+                    view.remove_item(rightBTN)
+                    view.remove_item(leftBTN)
+                    await getMessage.edit(embed=await get_embed(sliced_DB2data_sorted, local_currentPG, totalPG), view=buttons(currentPG=local_currentPG, totalPG=totalPG))
+                    
+                    messages_data["page"] = local_currentPG
+                    await messages.edit(messages_data)
+        
+        async def rightBTN_callback(inter):
+            await inter.response.defer()
+
+            async for messages in DBchannel3.history(limit=None):
+                messages_data = json.loads(messages.content.replace("'", '"'))
+                if messages_data["interactionID"] == inter.message.id:
+                    local_currentPG = messages_data["page"] + 1
+                    local_sent_messageID = messages_data["interactionID"]
+
+                    getChannelID = inter.channel.id
+                    getChannel = bot.get_channel(getChannelID)
+                    getMessage = await getChannel.fetch_message(local_sent_messageID)
+                    view.remove_item(rightBTN)
+                    view.remove_item(leftBTN)
+                    await getMessage.edit(embed=await get_embed(sliced_DB2data_sorted, local_currentPG, totalPG), view=buttons(currentPG=local_currentPG, totalPG=totalPG))
+                    
+                    messages_data["page"] = local_currentPG
+                    await messages.edit(messages_data)
+        
+        # if pressed then do the defined function
+        leftBTN.callback = leftBTN_callback
+        rightBTN.callback = rightBTN_callback
     else:
-        await inter.response.send_message(f"I'm sorry, but Lady Kanako forbids anyone from doing this command in this channel. Do it in <#{RPchannel_ID}> instead.")
+        warning = await ctx.send(f"I'm sorry, but Lady Kanako forbids anyone from doing this command in this channel.")
+        await temporaryMSG(warning)
+
+
+@bot.slash_command(description="Get bug reports")
+async def bugs(inter):
+    if not inter.channel.id == RPchannel_ID:
+        await inter.response.send_message("Sending!", ephemeral=True)
+        # Get channels
+        DBchannel = bot.get_channel(DBchannel_ID)
+        DBchannel2 = bot.get_channel(DBchannel2_ID)
+        DBchannel3 = bot.get_channel(DBchannel3_ID)
+
+        # Put DB2 data to array
+        DB2data = []
+        async for message in DBchannel2.history(limit=None):
+            message_data = json.loads(message.content.replace("'", '"'))
+            append_data = {"sortby": message_data["reactions"], "data": message_data}
+            DB2data.append(append_data)
+
+        # Sort the array
+        DB2data_sorted = sorted(DB2data, key=lambda i: i["sortby"], reverse=True)
+
+        # Define buttons
+        view = disnake.ui.View()
+        leftBTN = disnake.ui.Button(
+                style=disnake.ButtonStyle.blurple, 
+                emoji="⬅️", 
+                label="Left page"
+                )
+        rightBTN = disnake.ui.Button(
+                style=disnake.ButtonStyle.blurple, 
+                emoji="➡️", 
+                label="Next page"
+                )
+        def buttons(currentPG, totalPG):
+            if not currentPG == 1:
+                view.add_item(leftBTN)
+            if not currentPG == totalPG:
+                view.add_item(rightBTN)
+
+            return view
+
+        # Split the data into 5 per array
+        n=5
+        sliced_DB2data_sorted=[DB2data_sorted[i:i + n] for i in range(0, len(DB2data_sorted), n)]
+        currentPG = 1
+        totalPG = len(sliced_DB2data_sorted)
+
+        # Embed stuff
+        async def get_embed(sliced_DB2data_sorted, currentPG, totalPG):
+            thumbnail_url = "https://media.discordapp.net/attachments/988442510026235914/994600993574637689/d74ca0dcdcea3cd99cb9a93bb2a670ff.png"
+            embed=disnake.Embed(title="Bug Reports", description="From most reactions to least (wait for it to load until pressing another button)", color=0x4fe64c)
+            embed.set_thumbnail(url=thumbnail_url)
+            for data in sliced_DB2data_sorted[currentPG-1]:
+                dataDB2 = data["data"]
+                # get database content from database1
+                dataDB1_message = await DBchannel.fetch_message(dataDB2["databaseMSG_ID"])
+                dataDB1 = json.loads(dataDB1_message.content.replace("'", '"'))
+                # Gather info and boom assemble
+                thebug = dataDB1["bug"]
+                thereaction = dataDB2["reactions"]
+                thetime = dataDB1["time"]
+                thereportid = dataDB2["reportMSG_ID"]
+                thereporter = dataDB1["reporter"]
+                theproof = dataDB1["proof"]
+                embed.add_field(name=f"{thebug} ({thereaction} reactions)", value=f"Reporter: <@{thereporter}>\nTime reported: {thetime} (GMT+7)\nReport_id: {thereportid}\nProof: {theproof}", inline=False)
+                embed.set_footer(text=f"page {currentPG}/{totalPG}")
+            return embed
+        sent_message = await inter.channel.send(embed=await get_embed(sliced_DB2data_sorted, currentPG, totalPG), view=buttons(currentPG=currentPG, totalPG=totalPG))
+
+        post = {
+            "interactionID": sent_message.id,
+            "page": currentPG
+        }
+        DB_post = await DBchannel3.send(post)
+
+        async def leftBTN_callback(inter):
+            # So interaction failed dont accur
+            await inter.response.defer()
+
+            async for messages in DBchannel3.history(limit=None):
+                messages_data = json.loads(messages.content.replace("'", '"'))
+                if messages_data["interactionID"] == inter.message.id:
+                    local_currentPG = messages_data["page"] - 1
+                    local_sent_messageID = messages_data["interactionID"]
+
+                    getChannelID = inter.channel.id
+                    getChannel = bot.get_channel(getChannelID)
+                    getMessage = await getChannel.fetch_message(local_sent_messageID)
+                    view.remove_item(rightBTN)
+                    view.remove_item(leftBTN)
+                    await getMessage.edit(embed=await get_embed(sliced_DB2data_sorted, local_currentPG, totalPG), view=buttons(currentPG=local_currentPG, totalPG=totalPG))
+                    
+                    messages_data["page"] = local_currentPG
+                    await messages.edit(messages_data)
+        
+        async def rightBTN_callback(inter):
+            await inter.response.defer()
+
+            async for messages in DBchannel3.history(limit=None):
+                messages_data = json.loads(messages.content.replace("'", '"'))
+                if messages_data["interactionID"] == inter.message.id:
+                    local_currentPG = messages_data["page"] + 1
+                    local_sent_messageID = messages_data["interactionID"]
+
+                    getChannelID = inter.channel.id
+                    getChannel = bot.get_channel(getChannelID)
+                    getMessage = await getChannel.fetch_message(local_sent_messageID)
+                    view.remove_item(rightBTN)
+                    view.remove_item(leftBTN)
+                    await getMessage.edit(embed=await get_embed(sliced_DB2data_sorted, local_currentPG, totalPG), view=buttons(currentPG=local_currentPG, totalPG=totalPG))
+                    
+                    messages_data["page"] = local_currentPG
+                    await messages.edit(messages_data)
+        
+        # if pressed then do the defined function
+        leftBTN.callback = leftBTN_callback
+        rightBTN.callback = rightBTN_callback
+    else:
+        await inter.response.send_message(f"I'm sorry, but Lady Kanako forbids anyone from doing this command in this channel.", ephemeral=True)
 
 
 
@@ -265,7 +427,8 @@ async def delreport(ctx, message=None):
                     isExist = True
 
             if isExist == False:
-                await ctx.send("Please insert the report ID (or bug report message ID)!")
+                warning1 = await ctx.send("Please insert the report ID (or bug report message ID)!")
+                await temporaryMSG(warning1)
             else:
                 # Get info
                 async for x in DBchannel2.history(limit=None):
@@ -280,9 +443,11 @@ async def delreport(ctx, message=None):
 
                         await ctx.send("Done.")
         else:
-            await ctx.send("Please insert the report ID (or bug report message ID)!")
+            warning2 = await ctx.send("Please insert the report ID (or bug report message ID)!")
+            await temporaryMSG(warning2)
     else:
-        await ctx.send(f"I'm sorry, but Lady Kanako forbids anyone from doing this command in this channel. Do it in <#{RPchannel_ID}> instead.")
+        warning3 = await ctx.send(f"I'm sorry, but Lady Kanako forbids anyone from doing this command in this channel.")
+        await temporaryMSG(warning3)
 
 @delreport.error
 async def delreport_error(ctx, error):
