@@ -153,7 +153,7 @@ async def reportbug(inter, bug: str, proof: str):
             DBsend = await DBchannel.send(str(data))
             # Announce
             announce = await RPchannel.send(f"{inter.author.mention} reported a bug:\nTitle: {bug}\nProof: {proof}")
-            await announce.edit(f"{inter.author.mention} reported a bug:\nTitle: {bug}\nProof: {proof}\n\nTime reported: {current_time} (GMT +7)\nReport ID: {announce.id}")
+            await announce.edit(f"{inter.author.mention} reported a bug:\nTitle: {bug}\nProof: {proof}\n\nTime reported: {current_time}\nReport ID: {announce.id}")
             # Append database2
             data2 = {"reportMSG_ID": announce.id, "databaseMSG_ID": DBsend.id, "reactions": 0}
             await DBchannel2.send(str(data2))
@@ -227,7 +227,7 @@ async def bugs(ctx):
                 thereportid = dataDB2["reportMSG_ID"]
                 thereporter = dataDB1["reporter"]
                 theproof = dataDB1["proof"]
-                embed.add_field(name=f"{thebug} ({thereaction} reactions)", value=f"Reporter: <@{thereporter}>\nTime reported: {thetime} (GMT+7)\nReport_id: {thereportid}\nProof: {theproof}", inline=False)
+                embed.add_field(name=f"{thebug} ({thereaction} reactions)", value=f"Reporter: <@{thereporter}>\nTime reported: {thetime}\nReport_id: {thereportid}\nProof: {theproof}", inline=False)
                 embed.set_footer(text=f"page {currentPG}/{totalPG}")
             return embed
         sent_message = await ctx.send(embed=await get_embed(sliced_DB2data_sorted, currentPG, totalPG), view=buttons(currentPG=currentPG, totalPG=totalPG))
@@ -348,7 +348,7 @@ async def bugs(inter):
                 thereportid = dataDB2["reportMSG_ID"]
                 thereporter = dataDB1["reporter"]
                 theproof = dataDB1["proof"]
-                embed.add_field(name=f"{thebug} ({thereaction} reactions)", value=f"Reporter: <@{thereporter}>\nTime reported: {thetime} (GMT+7)\nReport_id: {thereportid}\nProof: {theproof}", inline=False)
+                embed.add_field(name=f"{thebug} ({thereaction} reactions)", value=f"Reporter: <@{thereporter}>\nTime reported: {thetime}\nReport_id: {thereportid}\nProof: {theproof}", inline=False)
                 embed.set_footer(text=f"page {currentPG}/{totalPG}")
             return embed
         sent_message = await inter.channel.send(embed=await get_embed(sliced_DB2data_sorted, currentPG, totalPG), view=buttons(currentPG=currentPG, totalPG=totalPG))
