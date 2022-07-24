@@ -79,7 +79,7 @@ async def on_raw_reaction_add(reaction):
                 if "❎" in list(str(x)):
                     count = int(x.count)
                     # If theres 4 or more X reaction
-                    if count >= 2:
+                    if count >= 4:
                         # Get data from database2
                         async for msg in DBchannel2.history(limit=None):
                             # Turn it to dictionary
